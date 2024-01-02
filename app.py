@@ -7,15 +7,20 @@ import time
 
 
 def convert_to_jpg(image):
+    # Force resize the image to 640x640
+    resized_image = image.resize((640, 640))
+
     # Konversi gambar ke format JPG
     with io.BytesIO() as output:
-        image.save(output, format="JPEG")
+        resized_image.save(output, format="JPEG")
         jpg_image = Image.open(io.BytesIO(output.getvalue()))
+
     return jpg_image
+
 
 def main():
     st.title("Foodify")
-    model = YOLO('first-model.pt')  
+    model = YOLO('models/640best-s.pt')  
 
     # Menentukan lebar kolom
     col1, col2 = st.columns([1, 2])
@@ -29,12 +34,16 @@ def main():
 
             # Konversi ke format JPG
             jpg_image = convert_to_jpg(image)
-            results = model.predict(jpg_image,stream=True, show=True, save=False, imgsz=256) # source already setup
-            bahan = model.names
+            results = model.predict(jpg_image,stream=True, show=True, save=False, imgsz=640) # source already setup
+            bahan_classes = model.names
 
-            for r in results:
-                for c in r.boxes.cls:
-                    bahan = bahan[int(c)]
+            bahan = "Unknown"  # Default value in case index is out of range
+
+        for r in results:
+            for c in r.boxes.cls:
+                c_int = int(c)
+                if 0 <= c_int < len(bahan_classes):
+                    bahan = bahan_classes[c_int]
             st.image(jpg_image, caption=f"{bahan}", use_column_width=True)
         
     # st.write(bahan)
